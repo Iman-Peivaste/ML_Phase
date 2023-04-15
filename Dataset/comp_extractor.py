@@ -77,7 +77,8 @@ class Read_prepare_data:
 #%%
 obj = Read_prepare_data()
 att = obj.list_att()
-my_choice2 = ['VEC', 'Pauling_EN', 'Melting_point_K','DFT_LDA_Etot',
+my_choice2 = ['VEC', 'Pauling_EN', 'Melting_point_K','DFT_LDA_Etot', 
+'outer_shell_electrons', 'no_of_valence_electrons',
               'Atomic_radius_calculated', 'Atomic_weight']
 df_element_attribute = obj.keep_att(my_choice2)
 #%%
@@ -253,5 +254,5 @@ data_rest = df_concatenated.reset_index()
 data_rest['Geo'] = data_rest['entropy'] / (data_rest['Atomic_radius_calculated_dif'])**2
 data_final = pd.concat([data_rest, y], axis=1)
 data_final['Atomic_radius_calculated_dif'] = data_final['Atomic_radius_calculated_dif']*100
-
-data_final.to_csv('dataset11252_76.csv')
+data_final['E_per_el'] = data_final['DFT_LDA_Etot']/data_final['Num_el']
+data_final.to_csv('dataset11252_79.csv')
