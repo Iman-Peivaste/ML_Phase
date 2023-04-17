@@ -3,7 +3,7 @@ from tqdm import tqdm
 import pymatgen.core as mg
 import numpy as np
 #%%
-df = pd.read_csv('11295_2_noP.csv', encoding="iso-8859-1")
+df = pd.read_csv('10387_2_noP.csv', encoding="iso-8859-1")
 NAME_HEAs = list (df['Alloy'])
 
 #%% creating an empty dataframe with columns of elements and row of alloys
@@ -29,12 +29,10 @@ for s in tqdm(range (len(NAME_HEAs))):
     
 df2.index = NAME_HEAs
 
-
-
-
 #%% to fill the above data frame
 i = 0
 for name in tqdm(NAME_HEAs):
+    # print(name)
     
     HEAs = mg.Composition(name)
     sym = []
@@ -122,9 +120,9 @@ att_name = list(df_element_attribute.columns)
 whole = []
 i=0
 for Name in tqdm(NAME_HEAs):
-    # print(Name)
-    # i=i+1
-    # print(i)
+    print(Name)
+    i=i+1
+    print(i)
     
     for at in att_name:
         ex = Mixture(Name, at, df_element_attribute)
@@ -255,4 +253,4 @@ data_rest['Geo'] = data_rest['entropy'] / (data_rest['Atomic_radius_calculated_d
 data_final = pd.concat([data_rest, y], axis=1)
 data_final['Atomic_radius_calculated_dif'] = data_final['Atomic_radius_calculated_dif']*100
 data_final['E_per_el'] = data_final['DFT_LDA_Etot']/data_final['Num_el']
-data_final.to_csv('dataset11252_79.csv')
+data_final.to_csv('dataset10387_70.csv')
