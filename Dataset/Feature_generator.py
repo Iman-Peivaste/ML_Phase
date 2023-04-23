@@ -253,4 +253,4 @@ data_rest['Geo'] = data_rest['entropy'] / (data_rest['Atomic_radius_calculated_d
 data_final = pd.concat([data_rest, y], axis=1)
 data_final['Atomic_radius_calculated_dif'] = data_final['Atomic_radius_calculated_dif']*100
 data_final['E_per_el'] = data_final['DFT_LDA_Etot']/data_final['Num_el']
-data_final.to_csv('dataset10387_70.csv')
+# data_final.to_csv('dataset10387_70.csv')
