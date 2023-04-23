@@ -34,6 +34,9 @@ from sklearn.ensemble import VotingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.decomposition import PCA
+
+from sklearn.feature_extraction import DictVectorizer
+import shap
 #%%
 X_train = pd.read_csv('X_train.csv')
 y_train = pd.read_csv('y_train.csv')
@@ -61,12 +64,7 @@ X_test = X_test[y_test["Phase"].isin(keep_categories)]
 y_test = y_test[y_test["Phase"].isin(keep_categories)]
 
 
-#%%
-
-
-
-
-
+#%%encoding the output
 
 cat_num2 =  y_resampled['Phase'].value_counts()
 ordinal_encoder = OrdinalEncoder()
@@ -78,13 +76,38 @@ y_train=y_train.ravel()
 y_test=y_test.ravel()
 y_resampled =y_resampled .ravel()
 
-#%%
+#%%Random Forest
 def RF_train(X_train, y_train,n_estimators ):
     model = RandomForestClassifier(n_estimators=n_estimators, random_state=42)
     print('Begining of fitting')
     model.fit(X_train, y_train)
     print('End of fitting')
     return model
+
+model = RF_train(X_train, y_train,n_estimators=1000 )
+predictions = model.predict(X_test)
+print("Accuracy:", accuracy_score(y_test, predictions))
+lst_column=X_train.columns.tolist()
+importances = model.feature_importances_
+imp_list = importances.tolist()
+imp= pd.DataFrame(importances.reshape(-1,13), columns=lst_column)
+imp = imp.T.sort_values(by=0)
+
+# fig, ax = plt.subplots(figsize=(12, 8))
+x = imp[-6:]
+x = x.rename(index={'Atomic_radius_calculated_dif': 'Atomic size difference', 
+                    'DFT_LDA_Etot': 'Total Energy (DFT)',
+                    'no_of_valence_electrons': 'NVE',
+                    'Enthalpy': 'Mixing Enthalpy',
+                    'Pauling_EN': 'Electronegarivity'})
+ax = x.plot(kind='bar')
+ax.legend().remove()
+plt.subplots_adjust(bottom=0.45)
+
+plt.rcParams.update({'font.family': 'Times New Roman', 'font.size': 16})
+plt.savefig('imp_RF(BCC_FCC).jpg', dpi=300, bbox_inches='tight')
+
+
 #%%
 clf = TabNetClassifier()  #TabNetRegressor()
 clf.fit(
@@ -95,59 +118,99 @@ preds = clf.predict(X_test)
 
 print("Accuracy:", accuracy_score(y_test, preds))
 #%%
-model = RF_train(X_train, y_train,n_estimators=1000 )
-predictions = model.predict(X_test)
-print("Accuracy:", accuracy_score(y_test, predictions))
-#%%
-learning_rate_range = np.arange(0.01, 1, 0.05)
-test_XG = [] 
-train_XG = []
-for lr in tqdm(learning_rate_range):
-    xgb_classifier = xgb.XGBClassifier(eta = lr)
-    xgb_classifier.fit(X_resampled, y_resampled)
-    train_XG.append(xgb_classifier.score(X_resampled, y_resampled))
-    test_XG.append(xgb_classifier.score(X_test, y_test))
+# #%%
+# learning_rate_range = np.arange(0.01, 1, 0.05)
+# test_XG = [] 
+# train_XG = []
+# for lr in tqdm(learning_rate_range):
+#     xgb_classifier = xgb.XGBClassifier(eta = lr)
+#     # xgb_classifier.fit(X_resampled, y_resampled)
+#     xgb_classifier.fit(X_train, y_train)
+#     train_XG.append(xgb_classifier.score(X_train, y_train))
+#     # train_XG.append(xgb_classifier.score(X_resampled, y_resampled))
+#     test_XG.append(xgb_classifier.score(X_test, y_test))
  #%%
-xgb_classifier = xgb.XGBClassifier(eta = 0.11) 
-xgb_classifier.fit(X_resampled, y_resampled) 
+from xgboost import plot_importance
+xgb_classifier = xgb.XGBClassifier(eta = 0.16) 
+xgb_classifier.fit(X_train, y_train) 
 print("Accuracy:", xgb_classifier.score(X_test, y_test))
-#%%
-fig = plt.figure(figsize=(10, 7))
-plt.plot(learning_rate_range, train_XG, c='orange', label='Train')
-plt.plot(learning_rate_range, test_XG, c='m', label='Test')
-plt.xlabel('Learning rate')
-plt.xticks(learning_rate_range)
-plt.ylabel('Accuracy score')
-plt.ylim(0.6, 1)
-plt.legend(prop={'size': 12}, loc=3)
-plt.title('Accuracy score vs. Learning rate of XGBoost', size=14)
-plt.show()
-#%%
 
-y_resampled = y_resampled.reshape(-1,1)
-y_test = y_test.reshape(-1,1)
+fig, ax = plt.subplots(figsize=(10, 8))
+plot_importance(xgb_classifier, ax=ax)
+plt.show()
+
+
+# vec = DictVectorizer()
+# booster = xgb.get_booster()
+# original_feature_names = booster.feature_names
+# booster.feature_names = vec.get_feature_names()
+# print(booster.get_dump()[0])
+# # recover original feature names
+# booster.feature_names = original_feature_name
+
+
+#%%
+# fig = plt.figure(figsize=(10, 7))
+# plt.plot(learning_rate_range, train_XG, c='orange', label='Train')
+# plt.plot(learning_rate_range, test_XG, c='m', label='Test')
+# plt.xlabel('Learning rate')
+# plt.xticks(learning_rate_range)
+# plt.ylabel('Accuracy score')
+# plt.ylim(0.6, 1)
+# plt.legend(prop={'size': 12}, loc=3)
+# plt.title('Accuracy score vs. Learning rate of XGBoost', size=14)
+# plt.show()
+#%%
+X_train = pd.read_csv('X_train.csv')
+y_train = pd.read_csv('y_train.csv')
+X_test = pd.read_csv('X_test.csv')
+y_test = pd.read_csv('y_test.csv')
+X_resampled = pd.read_csv('X_resampled.csv')
+y_resampled = pd.read_csv('y_resampled.csv')
+
+X_train = X_resampled
+y_train = y_resampled
+
+
+cat_num =  y_resampled['Phase'].value_counts()
+#%%
+keep_categories = ["BCC", "FCC", "BCC+FCC"]
+X_train = X_train[y_train["Phase"].isin(keep_categories)]
+
+# filter the training output data
+y_train = y_train[y_train["Phase"].isin(keep_categories)]
+
+# filter the testing input data
+X_test = X_test[y_test["Phase"].isin(keep_categories)]
+
+# filter the testing output data
+y_test = y_test[y_test["Phase"].isin(keep_categories)]
+#%%
+y_train = y_train.values.reshape(-1,1)
+y_test = y_test.values.reshape(-1,1)
 
 cat_encoder = OneHotEncoder()
-y_resampled = cat_encoder.fit_transform(y_resampled)
-y_resampled = y_resampled.toarray()
+y_train = cat_encoder.fit_transform(y_train)
+y_train = y_train.toarray()
 
 y_test = cat_encoder.fit_transform(y_test)
 y_test = y_test.toarray()
+#%%
 
-model = tf.keras.models.Sequential()
-model.add(tf.keras.Input(shape=(13,)))
-model.add(tf.keras.layers.Dense(320/2, activation='relu'))
-model.add(tf.keras.layers.Dropout(0.2))
-model.add(tf.keras.layers.Dense(352/2, activation='relu'))
-model.add(tf.keras.layers.BatchNormalization())
-model.add(tf.keras.layers.Dense(160/2, activation='relu'))
-model.add(tf.keras.layers.Dropout(0.2))
-model.add(tf.keras.layers.Dense(32/2,  activation='relu'))
-model.add(tf.keras.layers.Dense(11, activation = 'softmax'))
-model.summary()
-model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+#%%
+history = model.fit(x= X_train.values, y=y_train, batch_size = 32, epochs = 64, validation_data = (X_test.values, y_test))
+background = X_train.values[np.random.choice(X_train.values.shape[0], 100, replace=False)]
+explainer = shap.KernelExplainer(model.predict, background)
+shap_values = explainer.shap_values(X_test.values)
 
-history = model.fit(x= X_resampled, y=y_resampled, batch_size = 32, epochs = 128, validation_data = (X_test, y_test))
+# Plot feature importance
+
+
+
+fig, ax = plt.subplots(figsize=(10, 8))
+shap.summary_plot(shap_values, X_test, feature_names=X_train.columns, plot_type='bar', plot_size=(10,8))
+plt.show()
+
 #%%
 csfont = {'fontname':'Times New Roman'}
 plt.rcParams["font.family"] = "Times New Roman"
@@ -181,14 +244,22 @@ plt.yticks(fontsize=13)
 plt.grid()
 
 #%%
+from sklearn.inspection import permutation_importance
 svm_clf = SVC(kernel="poly", degree=6, coef0=1, C=5)
-svm_clf.fit(X_resampled, y_resampled)
+svm_clf.fit(X_train, y_train) 
 print("Accuracy:", svm_clf.score(X_test, y_test))
 
-svm_clf = SVC(kernel="rbf", gamma=5, C=0.001)
-svm_clf.fit(X_resampled, y_resampled)
-print("Accuracy:", svm_clf.score(X_test, y_test))
+result = permutation_importance(svm_clf, X_train, y_train, n_repeats=10, random_state=42)
+sorted_idx = result.importances_mean.argsort()[::-1]
+labels = X_train.columns[sorted_idx]
+
+# Plot feature importance
+fig, ax = plt.subplots(figsize=(10, 8))
+ax.boxplot(result.importances[sorted_idx].T, vert=False, labels=labels)
+ax.set_title("Permutation Importances (train set)")
+plt.tight_layout()
+plt.show()
+
+
 #%%
-tree_clf = DecisionTreeClassifier(max_depth=100)
-tree_clf.fit(X_resampled, y_resampled)
-print("Accuracy:", tree_clf.score(X_test, y_test))
+
