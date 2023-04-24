@@ -198,6 +198,21 @@ y_test = y_test.toarray()
 #%%
 
 #%%
+input_shape = X_test.shape[1]
+output_shape = y_train.shape[1]
+model = tf.keras.models.Sequential()
+model.add(tf.keras.Input(shape=(input_shape,)))
+model.add(tf.keras.layers.Dense(320/2, activation='relu'))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.Dense(352/2, activation='relu'))
+model.add(tf.keras.layers.BatchNormalization())
+model.add(tf.keras.layers.Dense(160/2, activation='relu'))
+model.add(tf.keras.layers.Dropout(0.2))
+model.add(tf.keras.layers.Dense(32/2,  activation='relu'))
+model.add(tf.keras.layers.Dense(output_shape, activation = 'softmax'))
+model.summary()
+model.compile(optimizer = 'adam', loss = 'categorical_crossentropy', metrics = ['accuracy'])
+history = model.fit(x= X_train, y=y_train, batch_size = 32, epochs = 128, validation_data = (X_test, y_test))
 history = model.fit(x= X_train.values, y=y_train, batch_size = 32, epochs = 64, validation_data = (X_test.values, y_test))
 background = X_train.values[np.random.choice(X_train.values.shape[0], 100, replace=False)]
 explainer = shap.KernelExplainer(model.predict, background)
